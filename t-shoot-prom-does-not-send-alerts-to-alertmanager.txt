@@ -1,0 +1,2 @@
+rate(prometheus_notifications_errors_total[5m]) / rate(prometheus_notifications_sent_total[5m]) > 0.03
+if out put greater than 0.3  then update to latest version of alertmanager image

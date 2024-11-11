@@ -1,0 +1,77 @@
+# Create user for mysql exporter
+CREATE USER 'exporter'@'localhost' IDENTIFIED BY 'XXXXXXXX' WITH MAX_USER_CONNECTIONS 3;
+GRANT PROCESS, REPLICATION CLIENT, SELECT ON *.* TO 'exporter'@'localhost';
+
+wget https://github.com/prometheus/mysqld_exporter/releases/download/v0.15.0/mysqld_exporter-0.15.0.linux-amd64.tar.gz
+
+tar xvzf mysqld_exporter-0.15.0.linux-amd64.tar.gz
+
+cd mysqld_exporter-0.15.0.linux-amd64
+
+sudo mv mysqld_exporter /usr/bin/
+
+sudo mkdir -p /etc/mysqld_exporter
+
+cd /etc/mysqld_exporter
+
+cat > my.cnf
+[client]
+user = exporter
+password = XXXXXXXX
+
+
+
+cat <<EOF | sudo tee /etc/systemd/system/mysqld-exporter.service
+[Unit]
+Description=Prometheus Server
+Documentation=https://prometheus.io/docs/introduction/overview/
+After=network-online.target
+
+[Service]
+User=root
+Group=root
+Restart=on-failure
+ExecStart=/usr/bin/mysql_exporter \
+  --config.my-cnf=/etc/mysqld_exporter/my.cnf
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+sudo systemctl daemon-reload
+sudo systemctl enable mysqld-exporter.service
+sudo systemctl start mysqld-exporter.service
+
+# it starts at port 9104
+# curl http://localhost:9104/metrics
+
+wget https://github.com/Lusitaniae/apache_exporter/releases/download/v1.0.2/apache_exporter-1.0.2.linux-amd64.tar.gz
+tar xvzf apache_exporter-1.0.2.linux-amd64.tar.gz
+cd apache_exporter-1.0.2.linux-amd64
+
+sudo useradd apache -g apache
+sudo groupadd --system apache
+chown apache:apache apache_exporter
+sudo mv apache_exporter /usr/bin
+
+cat <<EOF | sudo tee /etc/systemd/system/apache-exporter.service
+[Unit]
+Description=Apache Server Exporter
+Documentation=https://github.com/Lusitaniae/apache_exporter
+After=network-online.target
+
+[Service]
+User=apache
+Group=apache
+Restart=on-failure
+ExecStart=/usr/bin/apache_exporter
+
+[Install]
+WantedBy=multi-user.target
+EOF
+sudo systemctl daemon-reload
+sudo systemctl enable apache-exporter.service
+sudo systemctl start apache-exporter.service
+
+# it starts at port 9117
+# curl http://localhost:9117/metrics

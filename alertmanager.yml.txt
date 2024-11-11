@@ -1,0 +1,30 @@
+global:
+  resolve_timeout: 5m
+#  smtp_smarthost: 'localhost:25'
+#  smtp_from: 'alertmanager@example.org'
+route:
+  group_by: ['alertname', 'severity']
+  group_wait: 10s
+  group_interval: 5m
+  repeat_interval: 1h
+  receiver: email-notification
+receivers:
+  - name: 'email-notification'
+    email_configs:
+      - to: 'linuxworker2020@gmail.com'
+        send_resolved: true
+        smarthost: "smtp.gmail.com:587"
+        auth_username: "linuxworker2020@gmail.com"
+        auth_password: "dzbu qezi hrru lifh"
+        auth_identity: "linuxworker2020@gmail.com"
+        from: "linuxworker2020@gmail.com"
+  - name: webhook_receiver
+    webhook_configs:
+      - url: https://webhook.site/4942b069-310f-45eb-8f76-dd0e57a1c3fc
+        send_resolved: false
+inhibit_rules:
+- source_match:
+    severity: 'critical'
+  target_match:
+    severity: 'warning'
+  equal: ['alertname', 'instance']

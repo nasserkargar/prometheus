@@ -1,0 +1,100 @@
+mkdir -p ~/prometheus-grafana/{grafana,prometheus}
+wget https://raw.githubusercontent.com/grafana/grafana/main/conf/defaults.ini -O ~/prometheus-grafana/grafana/grafana.ini
+
+
+nano ~/prometheus-grafana/prometheus/prometheus.yml
+global:
+  scrape_interval: 15s
+  scrape_timeout: 10s
+  evaluation_interval: 15s
+alerting:
+  alertmanagers:
+  - static_configs:
+    - targets: []
+    scheme: http
+    timeout: 10s
+    api_version: v1
+scrape_configs:
+- job_name: prometheus
+  honor_timestamps: true
+  scrape_interval: 15s
+  scrape_timeout: 10s
+  metrics_path: /metrics
+  scheme: http
+  static_configs:
+  - targets:
+    - localhost:9090
+
+
+
+
+nano ~/prometheus-grafana/grafana/datasource.yml
+apiVersion: 1
+datasources:
+- name: Prometheus
+  type: prometheus
+  url: http://localhost:9090 
+  isDefault: true
+  access: proxy
+  editable: true
+
+
+************************************************
+nano ~/prometheus-grafana/docker-compose.yml
+version: "3.7"
+services:
+  prometheus:
+    image: prom/prometheus:latest
+    volumes:
+      - ~/prometheus-grafana/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+    ports:
+      - 9090:9090
+  grafana:
+    image: grafana/grafana:latest
+    volumes:
+      - ~/prometheus-grafana/grafana/grafana.ini:/etc/grafana/grafana.ini
+      - ~/prometheus-grafana/grafana/datasource.yml:/etc/grafana/provisioning/datasources/datasource.yaml
+    ports:
+      - 3000:3000
+    links:
+      - prometheus
+  node-exporter:
+    image: prom/node-exporter:latest
+    container_name: monitoring_node_exporter
+    restart: unless-stopped
+    expose:
+      - 9100
+
+*** I should also update prometheus.yml file to add node-exporter as a target
+tee ~/prometheus-grafana/prometheus/prometheus.yml<<EOF
+global:
+  scrape_interval: 15s
+  scrape_timeout: 10s
+  evaluation_interval: 15s
+alerting:
+  alertmanagers:
+  - static_configs:
+    - targets: []
+    scheme: http
+    timeout: 10s
+    api_version: v1
+scrape_configs:
+- job_name: prometheus
+  honor_timestamps: true
+  scrape_interval: 15s
+  scrape_timeout: 10s
+  metrics_path: /metrics
+  scheme: http
+  static_configs:
+  - targets: ['localhost:9090','node-exporter:9100']
+EOF
+
+
+***If you have other exporters from other services, you can add to the array to have something that looks like below:
+static_configs:
+         - targets: ['localhost:9090','cadvisor:8080','node-exporter:9100', 'nginx-exporter:9113']
+
+
+cd  ~/prometheus-grafana
+docker compose up -d
+

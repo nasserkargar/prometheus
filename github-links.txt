@@ -1,0 +1,2 @@
+https://github.com/ablx/monitoring_stack.git
+https://github.com/krpn/prometheus-alert-webhooker.git
